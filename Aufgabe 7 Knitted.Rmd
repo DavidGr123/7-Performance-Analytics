@@ -33,7 +33,7 @@ e) In the third step you follow page 6-8 of the second document and estimate the
 
 Read Chapter 24 of our book. In this exercise use a Minimum Variance and a Tangecy (Maxium Sharpe Ratio) portfolio calculate from your stocks, as well as the S&P500 as a benchmark (Period 2000-01-01 - 2020-01-11). For all three Investment Opportunities imagine you invest 100USD per month into the portfolio. What is the overall return this investment provides you? How much should you have invested at the beginning (one-time investment) to get the exact same overall wealth at the end of 2020? Can you plot both wealth developments over time?
 
-First of all, I am going to download all the crucial data, which we need in order to create the three portfolios. My personal stock choice are Apple, Nividia, Microsoft, American Express, Walmart, Bank of America, Morgan Stanley, Disney, Exxon Mobile. As the benchmark we take the S&P500, regarding to the underling task. 
+First of all, I am going to download all the crucial data, which we need in order to create the three portfolios. My personal stock choice are Apple, Nividia, Microsoft, American Express, Walmart, Bank of America, Morgan Stanley, Disney, Exxon Mobile. As the benchmark we take the S&P500, regarding to the underling task.  
 ```{r Choosing my personal set of stocks}
 install.packages("FinCal",dependencies=TRUE)
 library(timetk,PortfolioAnalytics)
@@ -86,7 +86,7 @@ chart.RiskReward(opt_port,return.col="mean", risk.col="sd",
 
 ```{r}
 frontier <- create.EfficientFrontier(R=stock_returns_xts, 
-                                       portfolio=port, 
+                                       portfolio=port,  
                                        type="mean-StdDev")
 chart.EfficientFrontier(frontier, match.col="StdDev", type="l",rf = 0, tangent.line = TRUE, chart.assets = TRUE,)
 ```
