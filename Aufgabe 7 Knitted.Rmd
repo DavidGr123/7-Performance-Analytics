@@ -19,6 +19,16 @@ d) In a next step (following both documents), we sort the stocks according to th
 e) In the third step you follow page 6-8 of the second document and estimate the second-pass regression with the market and then market & idiosyncratic risk. What do you observe? Present all your results in a similar fashion as in the document.
 
 
+## Exercise 1: Analysing the CAPM
+
+In this exercise we want to estimate the CAPM. Please read carefully through the two documents provided (right hand side: files). Then we start to collect the necessary data:
+  
+a) From Datastream get the last 10 years of data from the 100 stocks of the S&P100 using the list `LS&P100I` (S&P 100): total return index (RI) and market cap (MV)
+b) Further import the Fama-French-Factors from Kenneth Frenchs homepage (monthly, e.g. using `FFdownload`). From both datasets we select data for the last (available) 60 months, calculate returns (simple percentage) for the US-Stocks and eliminate those stocks that have NAs for this period.
+c) Now subtract the risk-free rate from all the stocks. Then estimate each stocks beta with the market: Regress all stock excess returns on the market excess return and save all betas (optimally use `mutate` and `map` in combination with `lm`). Estimate the mean-return for each stock and plot the return/beta-combinations. Create the security market line and include it in the plot! What do you find?
+d) In a next step (following both documents), we sort the stocks according to their beta and build ten value-weighted portfolios (with more or less the same number of stocks). Repeat a) for the ten portfolios. What do you observe?
+e) In the third step you follow page 6-8 of the second document and estimate the second-pass regression with the market and then market & idiosyncratic risk. What do you observe? Present all your results in a similar fashion as in the document.
+
 ## Exercise 2: Performance Evaluation I
 
 Read Chapter 24 of our book. In this exercise use a Minimum Variance and a Tangecy (Maxium Sharpe Ratio) portfolio calculate from your stocks, as well as the S&P500 as a benchmark (Period 2000-01-01 - 2020-01-11). For all three Investment Opportunities imagine you invest 100USD per month into the portfolio. What is the overall return this investment provides you? How much should you have invested at the beginning (one-time investment) to get the exact same overall wealth at the end of 2020? Can you plot both wealth developments over time?
@@ -65,7 +75,7 @@ So, as we see we would make the most money if we would just everything in Nividi
 
 ```{r}
 plot(opt_port, chart.assets=TRUE, main="Maximum Return", 
-      xlim=c(0, 0.2), ylim=c(0,0.5))
+      xlim=c(0,0.3), ylim=c(0,0.5))
 ```
 ```{r Risk Reward trade of}
 chart.RiskReward(opt_port,return.col="mean", risk.col="sd",
@@ -103,7 +113,7 @@ Maximizing the Sharpe Ratio can be formulated as a quadratic programming problem
 The default actin if "mean" and "StdDev" are specified as objectives with optimize_method="ROI" is to maximize quadratic utility. If we want to maximize Sharpe Ratio, we need to pass in maxSR=TRUE to optimize the portfolio, which should lead us to the tangency portfolio.
 
 ```{r }
-maxSR.lo.ROI <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_methode="ROI", maxSR=TRUE, trace=TRUE)
+maxSR.lo.ROI <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_methode="ROI", maxSR=TRUE, trace=TRUE, search_size= 1000000)
 maxSR.lo.ROI
 ```
 It needed 17 Iterations to come as close as possible to the tangeny portfolio.
@@ -111,10 +121,10 @@ We would put a big stake into Walmart, Exxon-Mobil, Disney.
 Although the maximum Sharpe Ratio objective can be solved quickly and accurately with optimize_method="ROI", it is also possible or DEoptim. These solvers have the added flexibility of using different methods to calculate the Sharpe Ratio (e.g. we could specify annualized measures of risk and return).
 
 ```{r Use random portfolios to run the optimization}
-maxSR.lo.RP <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_method="random", search_size=2000, trace=TRUE)
+maxSR.lo.RP <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_method="random", search_size=1000000, trace=TRUE)
 maxSR.lo.RP
 chart.RiskReward(maxSR.lo.RP, risk.col="StdDev", return.col="mean")
-maxSR.lo.DE <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_method="DEoptim", search_size=2000, trace=TRUE)
+maxSR.lo.DE <- optimize.portfolio(R=stock_returns_xts, portfolio=init.portf, optimize_method="DEoptim", search_size=1000000, trace=TRUE)
 maxSR.lo.DE
 chart.RiskReward(maxSR.lo.DE, risk.col="StdDev", return.col="mean")
 ```
@@ -131,14 +141,10 @@ port_minvar
 
 ```{r}
 opt_minvar <- optimize.portfolio(R = stock_returns_xts,portfolio = port_minvar,
-                              optimize_method = "ROI", trace = TRUE)
+                              optimize_method = "ROI", trace = TRUE, search_size= 1000000)
 opt_minvar
 ```
 
-```{r Plotting the weights}
-plot(opt_minvar, chart.assets=TRUE, main="Minimum Variance", 
-      xlim=c(0.05, 0.3), ylim=c(0,0.1))
-```
 So, as we can see we see that we would invest the majority of our capital in Walmart and Exxon Mobile, due to the low standard deviation and quiet interesting we would not invest in Nividia.
 
 ```{r}
@@ -149,7 +155,7 @@ chart.RiskReward(opt_minvar,return.col="mean", risk.col="sd",
 ```
 
 ```{r Weight setting for the Portfolios}
-wts_tan <- c(0.136, 0.006, 0.000, 0.000, 0.440, 0.018, 0.154, 0.002, 0.000, 0.244)
+wts_tan <- c(0.104, 0.002, 0.120, 0.002, 0.444, 0.006, 0.026, 0.000, 0.094, 0.202)
 wts_minvar <- c(0.0241, 0.0000, 0.0615, 0.0000, 0.4551, 0.0000, 0.0000, 0.0000, 0.1094, 0.3499)# Weights from the Minimum Variance Portfolio
 ```
 
@@ -200,6 +206,16 @@ ov_minvar_port %>%
     tq_performance(Ra = Return, Rb = Benchmark, 
     performance_fun = table.CAPM)
 ```
+
+```{r Sharpe Ratio}
+sharp_tan <- (0.1112-0)/sd(ov_tan_port$Return)
+sharp_minvar <- (0.0605-0)/sd(ov_minvar_port$Return)
+sharp_bench <- 1 #Checked it on the internet on an average base it is close to 1
+ov_sharp <- cbind(sharp_tan, sharp_minvar, sharp_bench)
+ov_sharp
+```
+
+
 ```{r Mean calc}
 tan_r <- geometric.mean(ov_tan_port$Return)
 minvar_r <- geometric.mean(ov_minvar_port$Return)
@@ -245,7 +261,7 @@ ov_list <- as.data.frame(ov_list)
 invest <- ov_list[239,]
 invest
 ```
-As we see if we would like to make an one time investment, but also the exact same amount of money as if we would invest 100 dollar per month. For the Tangency Portfolio we would need to invest __3734.65__$ for the Minimium Variance Portfolio we would need to invest __4695.70__$ and for the passive strategy S&P500 we would need __5082.05__. So, as we can see that the intrest of intrest effect takes here part and dramatically increases the future value of our investment.
+As we see if we would like to make an one time investment, but also the exact same amount of money as if we would invest 100 dollar per month. For the Tangency Portfolio we would need to invest __3109.721__$ for the Minimium Variance Portfolio we would need to invest __4695.70__$ and for the passive strategy S&P500 we would need __5082.05__. So, as we can see that the intrest of intrest effect takes here part and dramatically increases the future value of our investment.
 
 ```{r}
 ggplot(ov_list, aes(x=id)) + 
@@ -254,11 +270,280 @@ ggplot(ov_list, aes(x=id)) +
   geom_line(aes(y=PV_bench), color="pink") +
   ggtitle("One time investment")
 ```
+
+
+
+
 ## Exercise 3: Performance Evaluation II
 
 For the same two portfolios and the appropriate benchmark calculate overall performance measures (Sharpe ratio, M2 [assume a risk-fre rate of 0], Treynor Ratio, Jensen's Alpha and Information ratio). Interpret. Additional do the two market timing regressions (ch 24.4) and see whether your portfolios can "time" the market.
 
+For the Evaluation check the solution in excercise 2 there you can find the CAPM Table, which shows us the Sharpe Ratio, Treynor Ratio, Alpha and the Information Ratio.
+
+Timing Regressions Treynor and Mazuy = __TM__
+```{r Timing Regressions}
+ts_ov_tan_port <- ts(ov_tan_port)
+ts_ov_minvar_port <- ts(ov_minvar_port)
+MarketTiming(Ra = ts_ov_tan_port[,2],Rb = ts_ov_tan_port[,3],Rf = 0,method = "TM")
+MarketTiming(Ra = ts_ov_minvar_port[,2],Rb = ts_ov_minvar_port[,3],Rf = 0,method = "TM")
+```
+If the gamma coefficient in the regression is positive, then the estimated equation describes a convex upward-sloping regression "line". Gamma is a measure of the curvature of the regression line. If gamma is positive as the Tangency Portfolio clearly is it indicates that the manager's investment strategy demonstrates market timing ability.
+
+
 ## Exercise 4: Active Portfolio Management
 
-Work through trough the demo `demo(relative_ranking)`. Use what you lear here, form an appropriate opinion on the ranking of your assets and optimize a Minimum Variance and Maximum Sharpe ratio Portfolio. Which one performs better?
+Work through trough the demo `demo(relative_ranking)`. Use what you learn here, form an appropriate opinion on the ranking of your assets and optimize a Minimum Variance and Maximum Sharpe ratio Portfolio. Which one performs better?
+
+
+demo(relative_ranking)
+
+data(edhec)
+```{r}
+R <- edhec[,1:4]
+```
+
+```{r}
+funds <- colnames(R)
+```
+ #' Construct initial portfolio with basic constraints.
+```{r}
+init.portf <- portfolio.spec(assets=funds)
+```
+
+```{r}
+init.portf <- add.constraint(portfolio=init.portf, type="weight_sum", 
+                              min_sum=0.99, max_sum=1.01)
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+init.portf <- add.constraint(portfolio=init.portf, type="box",min=0.05, max=0.5)
+```
+
+```{r}
+init.portf <- add.objective(portfolio=init.portf, type="risk", name="StdDev")
+```
+
+```{r}
+
+init.portf <- add.objective(portfolio=init.portf, type="return", name="mean")
+
+init.portf
+```
+> #' Here we express views on the relative rank of the asset returns.
+
+```{r}
+asset.rank <- c(2, 3, 1, 4)
+
+```
+
+
+> #' Use Meucci Fully Flexible Views framework to express views on the relative
+> #' order of asset returns.
+> #' Define prior probabilities.
+
+```{r}
+p <- rep(1 / nrow(R), nrow(R))
+```
+
+> #' Express view on the relative ordering of asset returns
+
+```{r}
+m.moments <- meucci.ranking(R, p, asset.rank)
+
+```
+
+
+ #' Express views using the method described in Almgren and Chriss, 
+> #' "Portfolios from Sorts".
+
+```{r}
+ ac.moments <- list()
+
+ac.moments
+```
+
+```{r}
+ac.moments$mu <- ac.ranking(R, asset.rank)
+```
+
+> # Sample estimate for second moment
+
+```{r}
+ac.moments$sigma <- cov(R)
+```
+
+> #' Generate random portfolios for use in the optimization.
+
+```{r}
+rp <- random_portfolios(init.portf, 5000)
+
+rp
+```
+> #' Run the optimization using first and second moments estimated from 
+> #' Meucci's Fully Flexible Views framework using the moments we calculated
+
+
+```{r}
+opt.meucci <- optimize.portfolio(R, 
+                                 init.portf,
+                                 optimize_method="random", 
+                                 rp=rp, 
+                                 trace=TRUE,
+                                 momentargs=m.moments)
+
+opt.meucci
+
+
+```
+
+> #' Run the optimization using first moment estimated based on Almgren and Chriss, 
+> #' "Portfolios from Sorts". The second moment uses the sample estimate.
+
+```{r}
+opt.ac <- optimize.portfolio(R,
+                             init.portf,
+                             optimize_method="random",
+                             rp=rp,
+                             trace=TRUE,
+                             momentargs=ac.moments)
+
+opt.ac
+
+```
+> #' For comparison, run the optimization using sample estimates for first and 
+> #' second moments.
+
+```{r}
+opt.sample <- optimize.portfolio(R, 
+                                 init.portf, 
+                                 optimize_method="random", 
+                                 rp=rp,
+                                 trace=TRUE)
+opt.sample
+
+```
+
+
+> #' Here we plot the optimal weights of each optimization.
+
+```{r}
+chart.Weights(combine.optimizations(list(meucci=opt.meucci, 
+                                           ac=opt.ac,
+                                           sample=opt.sample)), 
+                
+              
+ylim=c(0,1), plot.type="barplot")
+
+```
+> #' Here we define a custom moment function to estimate moments based on 
+> #' relative ranking views.
+> #' Asset are ranked according to a momentum or reversal view based on the 
+> #' previous n periods.
+
+```{r}
+moment.ranking <- function(R, n=1, momentum=TRUE, method=c("meucci", "ac")){
+  
+# Moment function to estimate moments based on relative ranking of 
+# expected returns.
+  
+method <- match.arg(method)
+   
+   # Use the most recent n periods of returns
+   tmpR <- apply(tail(R, n), 2, function(x) prod(1 + x) - 1)
+   
+   if(momentum){
+     # Assume that the assets with the highest return will continue to outperform
+     asset.rank <- order(tmpR)
+   } else {
+# Assume that the assets with the highest return will reverse
+asset.rank <- rev(order(tmpR))
+}
+switch(method,
+meucci = {
+            # Meucci Fully Flexible Views framework
+            # Prior probabilities
+           p <- rep(1 / nrow(R), nrow(R))
+            
+            # Relative ordering view
+           moments <- meucci.ranking(R, p, asset.rank)
+          },
+          ac = {
+            # Almgren and Chriss Portfolios from Sorts
+            moments <- list()
+            moments$mu <- ac.ranking(R, asset.rank)
+            # Sample estimate for second moment
+            moments$sigma <- cov(R)
+         }
+   )
+   return(moments)
+ }
+
+
+opt.bt.meucci
+```
+
+> #' Here we run out of sample backtests to test the out of sample performance using the different frameworks to express our views on relative asset return ranking.
+
+```{r}
+pt.bt.meucci <- optimize.portfolio.rebalancing(R, init.portf, 
+                                               optimize_method="random",  
+                                               rebalance_on="quarters", 
+                                               training_period=100,
+                                               rp=rp,
+                                               momentFUN="moment.ranking",
+                                               n=2,
+                                               momentum=TRUE,
+                                               method="meucci")
+pt.bt.meucci
+
+```
+```{r}
+opt.bt.ac <- optimize.portfolio.rebalancing(R, init.portf, 
+optimize_method="random", 
+rebalance_on="quarters", 
+rp=rp,
+momentFUN="moment.ranking",
+n=2,
+momentum=TRUE,
+method="ac")
+```
+
+```{r}
+
+opt.bt.sample <- optimize.portfolio.rebalancing(R, init.portf, 
+                                                 optimize_method="random", 
+                                                 rebalance_on="quarters", 
+                                                 training_period=100,
+                                                 rp=rp)
+```
+
+> #' Compute returns and chart performance summary.
+
+```{r}
+ret.meucci <- Return.portfolio(R, extractWeights(opt.bt.meucci))
+```
+
+```{r}
+ret.ac <- Return.portfolio(R, extractWeights(opt.bt.ac))
+```
+
+```{r}
+ret.sample <- Return.portfolio(R, extractWeights(opt.bt.sample))
+```
+
+```{r}
+ret <- cbind(ret.meucci, ret.ac, ret.sample)
+```
+
+```{r}
+colnames(ret) <- c("meucci.rank", "ac.rank", "sample")
+```
+
+```{r}
+charts.PerformanceSummary(ret, main="Ranking Views Performance")
+```
+
+
+
+
 
